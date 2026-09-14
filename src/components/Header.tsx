@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 import { PageId } from '../types';
 import { SchoolLogo } from './SchoolLogo';
-import { Menu, X, Sparkles, PhoneCall, GraduationCap } from 'lucide-react';
+import { Menu, X, Sparkles, PhoneCall, GraduationCap, Database, Lock } from 'lucide-react';
 
 interface HeaderProps {
   activePage: PageId;
   onNavigate: (page: PageId) => void;
   onPlayPromo?: () => void;
   onOpenApplyModal: () => void;
+  onOpenDatabaseModal: () => void;
+  onLockSite?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activePage,
   onNavigate,
   onOpenApplyModal,
+  onOpenDatabaseModal,
+  onLockSite,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -47,6 +51,30 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="text-blue-100 font-medium">Empowering Next-Generation Software Creators</span>
         </div>
         <div className="flex items-center gap-4 text-blue-100">
+          <button
+            id="top-database-sync-btn"
+            onClick={onOpenDatabaseModal}
+            className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 font-bold transition-colors cursor-pointer text-xs"
+            title="Database & Image Backup for Vercel"
+          >
+            <Database className="w-3.5 h-3.5 text-amber-400" />
+            <span>Database & Vercel Sync</span>
+          </button>
+          {onLockSite && (
+            <>
+              <span className="text-blue-700">|</span>
+              <button
+                id="top-lock-site-btn"
+                onClick={onLockSite}
+                className="flex items-center gap-1.5 text-blue-200 hover:text-amber-300 font-bold transition-colors cursor-pointer text-xs"
+                title="Lock Website Access with Password"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Lock Website</span>
+              </button>
+            </>
+          )}
+          <span className="text-blue-700">|</span>
           <a href="tel:+1800555932" className="flex items-center gap-1.5 hover:text-amber-300 transition-colors font-medium">
             <PhoneCall className="w-3 h-3 text-amber-400" />
             +1 (800) 555-DEV-EDU
@@ -90,8 +118,18 @@ export const Header: React.FC<HeaderProps> = ({
             })}
           </nav>
 
-          {/* Actions on Desktop: Apply Now in Dark Navy matching screenshot */}
-          <div className="hidden sm:flex items-center gap-3">
+          {/* Actions on Desktop: Database Manager & Apply Now */}
+          <div className="hidden sm:flex items-center gap-2.5">
+            <button
+              id="header-database-btn"
+              onClick={onOpenDatabaseModal}
+              className="px-3.5 py-2 text-xs font-bold text-[#0B2347] bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              title="Manage database, export backup for Vercel, and restore images"
+            >
+              <Database className="w-3.5 h-3.5 text-amber-600" />
+              <span>Database / Backup</span>
+            </button>
+
             <button
               id="header-apply-btn"
               onClick={onOpenApplyModal}
@@ -137,6 +175,31 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="pt-2 flex flex-col gap-2">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenDatabaseModal();
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-amber-400 text-blue-950 font-bold text-sm bg-amber-50 shadow-xs cursor-pointer"
+            >
+              <Database className="w-4 h-4 text-amber-600" />
+              <span>Database & Image Backup (Vercel)</span>
+            </button>
+
+            {onLockSite && (
+              <button
+                id="mobile-lock-site-btn"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onLockSite();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5 text-slate-500" />
+                <span>Lock Website Access</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setMobileMenuOpen(false);

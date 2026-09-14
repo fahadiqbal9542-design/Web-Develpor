@@ -305,7 +305,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 id="hero-attendance-portal-btn"
                 onClick={() => onNavigate('attendance')}
                 className="px-6 py-3 bg-amber-50 hover:bg-amber-100 text-[#0B2347] border border-amber-300 font-bold text-sm rounded-full shadow-xs transition-all flex items-center gap-2 cursor-pointer"
-                title="Open Student Presence & Attendance Form (Password: king295.)"
+                title="Open Student Presence & Attendance Form"
               >
                 <Lock className="w-3.5 h-3.5 text-amber-600" />
                 <span>Attendance Form</span>

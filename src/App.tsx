@@ -12,14 +12,45 @@ import { EventsPage } from './components/pages/EventsPage';
 import { ContactPage } from './components/pages/ContactPage';
 import { AttendancePage } from './components/pages/AttendancePage';
 import { AdmissionModal } from './components/AdmissionModal';
+import { DatabaseModal } from './components/DatabaseModal';
 import { ScrollToTop } from './components/ScrollToTop';
 import { FloatingSideContact } from './components/FloatingSideContact';
+import { WebsiteLockScreen } from './components/WebsiteLockScreen';
 import founderProfileAvatar from './assets/images/founder_profile_avatar_1788521375468.jpg';
 import { idbGet, savePersistentData } from './utils/imageStorage';
 
 export default function App() {
   const [activePage, setActivePage] = useState<PageId>('home');
   const [isApplyModalOpen, setIsApplyModalOpen] = useState<boolean>(false);
+  const [isDbModalOpen, setIsDbModalOpen] = useState<boolean>(false);
+
+  // Master Website Lock State (starts locked until user enters king295.)
+  const [isSiteUnlocked, setIsSiteUnlocked] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('webdev_site_unlocked') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const handleUnlockSite = () => {
+    setIsSiteUnlocked(true);
+    try {
+      sessionStorage.setItem('webdev_site_unlocked', 'true');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleLockSite = () => {
+    setIsSiteUnlocked(false);
+    try {
+      sessionStorage.removeItem('webdev_site_unlocked');
+      localStorage.removeItem('webdev_site_unlocked');
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Persistent Environment Cards state across all page transitions & reloads
   const [cards, setCards] = useState<EnvironmentCard[]>(() => {
@@ -132,6 +163,11 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // If website is locked, show the master lock screen
+  if (!isSiteUnlocked) {
+    return <WebsiteLockScreen onUnlock={handleUnlockSite} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-white text-blue-950 selection:bg-amber-400 selection:text-blue-950">
       {/* 1. PERSISTENT WEBSITE HEADER */}
@@ -139,6 +175,8 @@ export default function App() {
         activePage={activePage}
         onNavigate={handleNavigate}
         onOpenApplyModal={() => setIsApplyModalOpen(true)}
+        onOpenDatabaseModal={() => setIsDbModalOpen(true)}
+        onLockSite={handleLockSite}
       />
 
       {/* 2. MAIN PAGE CONTENT WITH SMOOTH TRANSITIONS */}
@@ -260,7 +298,10 @@ export default function App() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4, ease: "easeInOut" }}
             >
-              <AttendancePage onNavigate={handleNavigate} />
+              <AttendancePage
+                onNavigate={handleNavigate}
+                onOpenDatabaseModal={() => setIsDbModalOpen(true)}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -270,6 +311,8 @@ export default function App() {
       <Footer
         onNavigate={handleNavigate}
         onOpenApplyModal={() => setIsApplyModalOpen(true)}
+        onOpenDatabaseModal={() => setIsDbModalOpen(true)}
+        onLockSite={handleLockSite}
       />
 
       {/* 5. ADMISSIONS APPLICATION MODAL */}
@@ -281,8 +324,21 @@ export default function App() {
       {/* 6. SCROLL TO TOP FLOATING BUTTON */}
       <ScrollToTop />
 
-      {/* 7. FLOATING RIGHT SIDE CONTACT DOCK (PHONE, EMAIL, LOCATION) */}
-      <FloatingSideContact onNavigate={handleNavigate} />
+      {/* 7. FLOATING RIGHT SIDE CONTACT DOCK (PHONE, EMAIL, LOCATION, DATABASE, LOCK) */}
+      <FloatingSideContact
+        onNavigate={handleNavigate}
+        onOpenDatabaseModal={() => setIsDbModalOpen(true)}
+        onLockSite={handleLockSite}
+      />
+
+      {/* 8. DATABASE & VERCEL BACKUP MODAL */}
+      <DatabaseModal
+        isOpen={isDbModalOpen}
+        onClose={() => setIsDbModalOpen(false)}
+        onDatabaseRestored={() => {
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

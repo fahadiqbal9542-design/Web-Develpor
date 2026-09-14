@@ -23,7 +23,8 @@ import {
   RotateCcw,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  Database
 } from 'lucide-react';
 
 const CORRECT_PASSWORD = 'king295.';
@@ -74,9 +75,13 @@ const INITIAL_STUDENTS: StudentAttendanceRecord[] = [
 
 interface AttendancePageProps {
   onNavigate: (page: PageId) => void;
+  onOpenDatabaseModal?: () => void;
 }
 
-export const AttendancePage: React.FC<AttendancePageProps> = ({ onNavigate }) => {
+export const AttendancePage: React.FC<AttendancePageProps> = ({
+  onNavigate,
+  onOpenDatabaseModal,
+}) => {
   // Password protection state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
@@ -151,7 +156,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ onNavigate }) =>
       }
       showToast('Portal Unlocked Successfully!');
     } else {
-      setAuthError('Incorrect password! Required password is king295.');
+      setAuthError('Incorrect password! Access denied.');
     }
   };
 
@@ -413,7 +418,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ onNavigate }) =>
                     setPasswordInput(e.target.value);
                     setAuthError(null);
                   }}
-                  placeholder="Enter password (king295.)"
+                  placeholder="Enter security password"
                   autoFocus
                   className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 focus:border-[#0B2347] focus:bg-white rounded-xl text-sm font-medium text-slate-900 outline-none transition-all pr-12"
                 />
@@ -443,12 +448,6 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ onNavigate }) =>
               <span>Unlock Attendance Form</span>
             </button>
           </form>
-
-          {/* Password Reminder Helper for the user */}
-          <div className="mt-5 p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-900 flex items-center justify-between">
-            <span className="font-medium">Specified Password:</span>
-            <code className="font-mono font-bold bg-amber-200/60 px-2 py-0.5 rounded text-[#0B2347]">king295.</code>
-          </div>
 
           <div className="mt-6 pt-4 border-t border-slate-100 flex justify-center">
             <button
@@ -507,6 +506,18 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({ onNavigate }) =>
               <UserPlus className="w-4 h-4 text-[#0B2347] stroke-[2.5]" />
               <span>+ Add Student / Member</span>
             </button>
+
+            {/* Backup / Database Sync Button */}
+            {onOpenDatabaseModal && (
+              <button
+                onClick={onOpenDatabaseModal}
+                className="px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#0B2347] font-bold text-xs rounded-xl border border-blue-200 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="Backup or Restore student database for Vercel"
+              >
+                <Database className="w-3.5 h-3.5 text-blue-700" />
+                <span>Backup Database</span>
+              </button>
+            )}
 
             {/* Lock Portal Button */}
             <button

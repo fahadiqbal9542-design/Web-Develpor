@@ -1,16 +1,23 @@
 import React from 'react';
 import { PageId } from '../types';
 import { SchoolLogo } from './SchoolLogo';
-import { Mail, Phone, MapPin, Play, Heart, ArrowUp, ShieldCheck } from 'lucide-react';
+import { Mail, Phone, MapPin, Play, Heart, ArrowUp, ShieldCheck, Database, Lock } from 'lucide-react';
 import { SCHOOL_FULL_TITLE, SCHOOL_MOTTO } from '../data/schoolData';
 
 interface FooterProps {
   onNavigate: (page: PageId) => void;
   onPlayPromo?: () => void;
   onOpenApplyModal: () => void;
+  onOpenDatabaseModal?: () => void;
+  onLockSite?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenApplyModal }) => {
+export const Footer: React.FC<FooterProps> = ({
+  onNavigate,
+  onOpenApplyModal,
+  onOpenDatabaseModal,
+  onLockSite,
+}) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -132,6 +139,28 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenApplyModal }) 
                 Contact Us
               </button>
             </li>
+            {onOpenDatabaseModal && (
+              <li>
+                <button
+                  onClick={onOpenDatabaseModal}
+                  className="hover:text-amber-300 transition-colors text-amber-300 font-bold flex items-center gap-1.5 cursor-pointer pt-1"
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  <span>Database / Backup</span>
+                </button>
+              </li>
+            )}
+            {onLockSite && (
+              <li>
+                <button
+                  onClick={onLockSite}
+                  className="hover:text-amber-300 transition-colors text-slate-300 font-medium flex items-center gap-1.5 cursor-pointer pt-1"
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Lock Website</span>
+                </button>
+              </li>
+            )}
           </ul>
         </div>
 

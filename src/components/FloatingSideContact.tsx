@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Phone, Mail, MapPin, ExternalLink, Check, Copy, X } from 'lucide-react';
+import { Phone, Mail, MapPin, ExternalLink, Check, Copy, X, Database, Lock } from 'lucide-react';
 import { PageId } from '../types';
 
 interface FloatingSideContactProps {
   onNavigate: (page: PageId) => void;
+  onOpenDatabaseModal?: () => void;
+  onLockSite?: () => void;
 }
 
 type ActiveFlyout = 'phone' | 'mail' | 'location' | null;
 
-export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({ onNavigate }) => {
+export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
+  onNavigate,
+  onOpenDatabaseModal,
+  onLockSite,
+}) => {
   const [activeFlyout, setActiveFlyout] = useState<ActiveFlyout>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
@@ -244,6 +250,38 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({ onNavi
               </span>
             )}
           </button>
+
+          {/* Database & Vercel Image Storage Icon Button */}
+          {onOpenDatabaseModal && (
+            <button
+              id="side-contact-db-btn"
+              onClick={onOpenDatabaseModal}
+              aria-label="Database & Vercel Backup"
+              title="Database & Image Backup (Vercel)"
+              className="p-2 rounded-xl text-amber-300 hover:text-amber-200 hover:bg-blue-900/80 hover:scale-110 transition-all duration-200 group relative flex items-center justify-center cursor-pointer"
+            >
+              <Database className="w-5 h-5 transition-transform duration-200 group-hover:rotate-12" />
+              <span className="pointer-events-none absolute right-12 px-2.5 py-1 rounded-md bg-[#0B2347] text-amber-300 text-[11px] font-bold shadow-lg border border-amber-400/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                💾 Database & Images Backup
+              </span>
+            </button>
+          )}
+
+          {/* Lock Website Button */}
+          {onLockSite && (
+            <button
+              id="side-contact-lock-btn"
+              onClick={onLockSite}
+              aria-label="Lock Website with Password"
+              title="Lock Website Access"
+              className="p-2 rounded-xl text-slate-300 hover:text-amber-400 hover:bg-blue-900/80 hover:scale-110 transition-all duration-200 group relative flex items-center justify-center cursor-pointer"
+            >
+              <Lock className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+              <span className="pointer-events-none absolute right-12 px-2.5 py-1 rounded-md bg-[#0B2347] text-amber-300 text-[11px] font-bold shadow-lg border border-amber-400/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                🔒 Lock Website
+              </span>
+            </button>
+          )}
         </div>
       </aside>
     </>
