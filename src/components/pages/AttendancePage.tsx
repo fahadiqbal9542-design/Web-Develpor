@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageId, StudentAttendanceRecord, AttendanceStatus } from '../../types';
 import { idbGet, savePersistentData, compressImage } from '../../utils/imageStorage';
+import { syncSectionToSupabase } from '../../utils/supabase';
 import {
   Lock,
   Unlock,
@@ -119,6 +120,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
   // Add/Edit Student Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null);
   const [formName, setFormName] = useState('');
   const [formRollNo, setFormRollNo] = useState('');
   const [formGrade, setFormGrade] = useState('');
@@ -209,6 +211,12 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
 
   const stats = activeStudent ? calculateStats(activeStudent.days) : { monthlyRate: '0.0', daysAbsent: 0, daysPresent: 0, daysLate: 0, daysOff: 0 };
 
+  const updateStudentsAndPersist = (updated: StudentAttendanceRecord[]) => {
+    setStudents(updated);
+    savePersistentData('webdev_students_attendance', updated);
+    syncSectionToSupabase('studentsAttendance', updated).catch(() => {});
+  };
+
   // Cycle attendance on click of a day: present -> absent -> late -> off -> present
   const handleDayClick = (dayNumber: number) => {
     if (!activeStudent) return;
@@ -235,8 +243,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
       return s;
     });
 
-    setStudents(updatedStudents);
-    savePersistentData('webdev_students_attendance', updatedStudents);
+    updateStudentsAndPersist(updatedStudents);
   };
 
   // Mark all working days
@@ -253,8 +260,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
     }
 
     const updated = students.map((s) => (s.id === activeStudent.id ? { ...s, days: newDays } : s));
-    setStudents(updated);
-    savePersistentData('webdev_students_attendance', updated);
+    updateStudentsAndPersist(updated);
     showToast(`Updated attendance for ${activeStudent.name}`);
   };
 
@@ -297,8 +303,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
     try {
       const compressed = await compressImage(file, 400, 400, 0.85);
       const updated = students.map((s) => (s.id === activeStudent.id ? { ...s, avatar: compressed } : s));
-      setStudents(updated);
-      savePersistentData('webdev_students_attendance', updated);
+      updateStudentsAndPersist(updated);
       showToast('Student photo updated successfully!');
     } catch (err) {
       console.error(err);
@@ -324,8 +329,7 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
         }
         return s;
       });
-      setStudents(updated);
-      savePersistentData('webdev_students_attendance', updated);
+      updateStudentsAndPersist(updated);
       showToast('Student details updated!');
     } else {
       // Add new student
@@ -349,28 +353,53 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
       };
 
       const updated = [...students, newStudent];
-      setStudents(updated);
       setSelectedStudentId(newStudent.id);
-      savePersistentData('webdev_students_attendance', updated);
+      updateStudentsAndPersist(updated);
       showToast(`Student "${newStudent.name}" added successfully!`);
     }
 
     setIsAddModalOpen(false);
   };
 
-  // Delete student
-  const handleDeleteStudent = (id: string, name: string) => {
-    if (students.length <= 1) {
-      showToast('Cannot delete the only student record.');
-      return;
+  // Delete student with in-app confirmation modal (works reliably inside iframes)
+  const handleRequestDeleteStudent = (id: string, name: string) => {
+    setStudentToDelete({ id, name });
+  };
+
+  const confirmDeleteStudent = () => {
+    if (!studentToDelete) return;
+    const { id, name } = studentToDelete;
+    const remaining = students.filter((s) => s.id !== id);
+
+    if (remaining.length === 0) {
+      const initialDays: Record<number, AttendanceStatus> = {};
+      for (let i = 1; i <= 30; i++) {
+        const dayOfWeek = i % 7;
+        if (dayOfWeek === 5 || dayOfWeek === 6) {
+          initialDays[i] = 'off';
+        } else {
+          initialDays[i] = 'present';
+        }
+      }
+      const fallbackStudent: StudentAttendanceRecord = {
+        id: `std-${Date.now()}`,
+        name: 'New Student',
+        rollNo: '10-A-01',
+        grade: 'Grade 10-A',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        yearMonth: '2026-09',
+        days: initialDays,
+      };
+      setSelectedStudentId(fallbackStudent.id);
+      updateStudentsAndPersist([fallbackStudent]);
+      showToast(`Student "${name}" removed. Initialized new register.`);
+    } else {
+      setSelectedStudentId(remaining[0].id);
+      updateStudentsAndPersist(remaining);
+      showToast(`Student "${name}" removed successfully.`);
     }
-    if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-      const updated = students.filter((s) => s.id !== id);
-      setStudents(updated);
-      setSelectedStudentId(updated[0].id);
-      savePersistentData('webdev_students_attendance', updated);
-      showToast(`Student record removed.`);
-    }
+
+    setStudentToDelete(null);
   };
 
   // Filter students by search
@@ -619,21 +648,21 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
                     </h2>
                     {/* Action buttons to Edit / Delete */}
                     <button
+                      type="button"
                       onClick={() => handleOpenEditStudent(activeStudent)}
-                      className="p-1 text-slate-400 hover:text-blue-700 rounded-lg hover:bg-slate-100 transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-blue-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                       title="Edit student info"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    {students.length > 1 && (
-                      <button
-                        onClick={() => handleDeleteStudent(activeStudent.id, activeStudent.name)}
-                        className="p-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                        title="Delete student"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRequestDeleteStudent(activeStudent.id, activeStudent.name)}
+                      className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                      title="Remove student record"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                   <div className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
                     <span>Roll No: {activeStudent.rollNo}</span>
@@ -899,22 +928,74 @@ export const AttendancePage: React.FC<AttendancePageProps> = ({
               </div>
 
               {/* Submit Buttons */}
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-[#0B2347] hover:bg-[#123363] text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
-                >
-                  {editingStudentId ? 'Save Changes' : '+ Add to Register'}
-                </button>
+              <div className="pt-4 flex items-center justify-between gap-3 border-t border-slate-100">
+                {editingStudentId ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = students.find((s) => s.id === editingStudentId);
+                      if (target) {
+                        setIsAddModalOpen(false);
+                        handleRequestDeleteStudent(target.id, target.name);
+                      }
+                    }}
+                    className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-[#0B2347] hover:bg-[#123363] text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
+                  >
+                    {editingStudentId ? 'Save Changes' : '+ Add to Register'}
+                  </button>
+                </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* In-App Remove Student Confirmation Modal (Reliable in iFrame) */}
+      {studentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center animate-in zoom-in-95 duration-150">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 border border-red-200 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <h3 className="text-lg font-black text-slate-900 mb-1.5 font-display">
+              Remove Student Record?
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+              Are you sure you want to remove <strong className="text-slate-800 font-bold">"{studentToDelete.name}"</strong>? This will remove this student and their monthly attendance register.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setStudentToDelete(null)}
+                className="w-full py-3 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteStudent}
+                className="w-full py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Yes, Remove</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

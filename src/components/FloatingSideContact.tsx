@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Phone, Mail, MapPin, ExternalLink, Check, Copy, X, Database, Lock } from 'lucide-react';
-import { PageId } from '../types';
+import { Phone, Mail, MapPin, ExternalLink, Check, Copy, X, Database, Lock, ShieldCheck } from 'lucide-react';
+import { PageId, ContactInquiry } from '../types';
+import { loadPersistentData } from '../utils/imageStorage';
 
 interface FloatingSideContactProps {
   onNavigate: (page: PageId) => void;
   onOpenDatabaseModal?: () => void;
+  onOpenAdminModal?: () => void;
   onLockSite?: () => void;
 }
 
@@ -14,10 +16,27 @@ type ActiveFlyout = 'phone' | 'mail' | 'location' | null;
 export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
   onNavigate,
   onOpenDatabaseModal,
+  onOpenAdminModal,
   onLockSite,
 }) => {
   const [activeFlyout, setActiveFlyout] = useState<ActiveFlyout>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const inqs = (await loadPersistentData<ContactInquiry[]>('webdev_inquiries', [])) || [];
+        setUnreadCount(inqs.filter((i) => !i.status || i.status === 'new').length);
+      } catch {
+        // ignore
+      }
+    };
+    check();
+    const handleUpdate = () => check();
+    window.addEventListener('webdev:inquiry_updated', handleUpdate);
+    return () => window.removeEventListener('webdev:inquiry_updated', handleUpdate);
+  }, []);
 
   const handleCopy = (text: string, label: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -68,7 +87,7 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
                         Admissions Phone
                       </h4>
                       <p className="text-sm font-black text-blue-950">
-                        +1 (800) 555-DEV-EDU
+                        03019249721
                       </p>
                     </div>
                   </div>
@@ -77,14 +96,14 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
                   </p>
                   <div className="flex items-center gap-2 pt-1">
                     <a
-                      href="tel:+18005553383"
+                      href="tel:03019249721"
                       className="flex-1 py-2 px-3 bg-[#0B2347] hover:bg-[#133568] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                     >
                       <Phone className="w-3.5 h-3.5 text-amber-300" />
                       <span>Call Now</span>
                     </a>
                     <button
-                      onClick={(e) => handleCopy('+1 (800) 555-3383', 'phone', e)}
+                      onClick={(e) => handleCopy('03019249721', 'phone', e)}
                       className="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-blue-950 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors"
                       title="Copy phone number"
                     >
@@ -110,7 +129,7 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
                         Official Email
                       </h4>
                       <p className="text-xs font-black text-blue-950 truncate max-w-[180px]">
-                        admissions@webdeveloper.edu
+                        fahadiqbal9542@gmail.com
                       </p>
                     </div>
                   </div>
@@ -119,7 +138,7 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
                   </p>
                   <div className="flex items-center gap-2 pt-1">
                     <a
-                      href="mailto:admissions@webdeveloper.edu?subject=School%20Admissions%20Inquiry"
+                      href="mailto:fahadiqbal9542@gmail.com?subject=School%20Admissions%20Inquiry"
                       className="flex-1 py-2 px-3 bg-[#0B2347] hover:bg-[#133568] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                     >
                       <Mail className="w-3.5 h-3.5 text-amber-300" />
@@ -193,7 +212,7 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
             id="side-contact-phone-btn"
             onClick={() => toggleFlyout('phone')}
             aria-label="Contact Phone"
-            title="Call Us: +1 (800) 555-DEV-EDU"
+            title="Call Us: 03019249721"
             className={`p-2 rounded-xl transition-all duration-200 group relative flex items-center justify-center ${
               activeFlyout === 'phone'
                 ? 'bg-blue-800 text-amber-300 scale-110'
@@ -204,7 +223,7 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
             {/* Tooltip on hover if flyout not active */}
             {!activeFlyout && (
               <span className="pointer-events-none absolute right-12 px-2 py-1 rounded-md bg-[#0B2347] text-white text-[11px] font-bold shadow-lg border border-blue-700/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Call: +1 (800) 555-DEV-EDU
+                Call: 03019249721
               </span>
             )}
           </button>
@@ -214,7 +233,7 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
             id="side-contact-mail-btn"
             onClick={() => toggleFlyout('mail')}
             aria-label="Contact Email"
-            title="Email: admissions@webdeveloper.edu"
+            title="Email: fahadiqbal9542@gmail.com"
             className={`p-2 rounded-xl transition-all duration-200 group relative flex items-center justify-center ${
               activeFlyout === 'mail'
                 ? 'bg-blue-800 text-amber-300 scale-110'
@@ -225,7 +244,7 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
             {/* Tooltip on hover if flyout not active */}
             {!activeFlyout && (
               <span className="pointer-events-none absolute right-12 px-2 py-1 rounded-md bg-[#0B2347] text-white text-[11px] font-bold shadow-lg border border-blue-700/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Email Admissions
+                fahadiqbal9542@gmail.com
               </span>
             )}
           </button>
@@ -250,6 +269,27 @@ export const FloatingSideContact: React.FC<FloatingSideContactProps> = ({
               </span>
             )}
           </button>
+
+          {/* Admin Control Portal Button */}
+          {onOpenAdminModal && (
+            <button
+              id="side-contact-admin-btn"
+              onClick={onOpenAdminModal}
+              aria-label="Admin Control Portal"
+              title="Admin Portal (Visitor History & Messages)"
+              className="p-2 rounded-xl text-amber-400 hover:text-white hover:bg-slate-900 hover:scale-110 transition-all duration-200 group relative flex items-center justify-center cursor-pointer"
+            >
+              <ShieldCheck className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -left-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                  {unreadCount}
+                </span>
+              )}
+              <span className="pointer-events-none absolute right-12 px-2.5 py-1 rounded-md bg-slate-950 text-amber-300 text-[11px] font-black shadow-lg border border-amber-400/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                🛡️ Admin Portal ({unreadCount > 0 ? `${unreadCount} New` : 'Live'})
+              </span>
+            </button>
+          )}
 
           {/* Database & Vercel Image Storage Icon Button */}
           {onOpenDatabaseModal && (

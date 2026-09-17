@@ -51,12 +51,12 @@ export const DEFAULT_ENVIRONMENT_CARDS: EnvironmentCard[] = [
   },
   {
     id: 'card-2',
-    category: 'EVENTS',
+    category: 'CLASSES',
     date: 'Fall 2025',
     title: 'Abdullah web developer',
     description: 'Over 40 student teams pitching live production web applications to Silicon Valley venture leaders.',
     image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
-    targetPage: 'events'
+    targetPage: 'classes'
   },
   {
     id: 'card-3',
@@ -74,7 +74,7 @@ export const DEFAULT_ENVIRONMENT_CARDS: EnvironmentCard[] = [
     title: 'Asad web developer',
     description: 'Where IoT web interfaces connect to physical hardware, automation circuits, and autonomous systems.',
     image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80',
-    targetPage: 'academics'
+    targetPage: 'campus'
   }
 ];
 
@@ -97,8 +97,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           if (c.id === 'card-1' && c.title === 'High-Speed Dual-Monitor Coding Lab') {
             return { ...c, title: 'Mushahid web developer' };
           }
-          if (c.id === 'card-2' && c.title === 'Annual Hackathon Grand Finals') {
-            return { ...c, title: 'Abdullah web developer' };
+          if (c.id === 'card-2') {
+            return {
+              ...c,
+              title: c.title === 'Annual Hackathon Grand Finals' ? 'Abdullah web developer' : c.title,
+              targetPage: (c.targetPage as string) === 'events' ? 'classes' : c.targetPage
+            };
           }
           if (c.id === 'card-3' && c.title === 'Modern Collaborative Library & Study Hub') {
             return { ...c, title: 'Bilal web developer' };

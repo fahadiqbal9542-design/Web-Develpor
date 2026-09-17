@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PageId } from '../../types';
+import { PageId, ContactInquiry } from '../../types';
 import {
   MapPin,
   Phone,
@@ -12,6 +12,9 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
+import { savePersistentData, loadPersistentData } from '../../utils/imageStorage';
+import { syncSectionToSupabase } from '../../utils/supabase';
+import { getOrCreateSessionId, markContactSubmittedInCurrentSession } from '../../utils/visitorTracker';
 
 interface ContactPageProps {
   onNavigate: (page: PageId) => void;
@@ -30,9 +33,38 @@ export const ContactPage: React.FC<ContactPageProps> = () => {
   const [submitted, setSubmitted] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email) return;
+
+    try {
+      const sessionId = getOrCreateSessionId();
+      const existing = (await loadPersistentData<ContactInquiry[]>('webdev_inquiries', [])) || [];
+      const newInquiry: ContactInquiry = {
+        id: `inq-${Date.now()}`,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        studentGrade: formData.studentGrade,
+        interestTrack: formData.interestTrack,
+        message: formData.message.trim(),
+        createdAt: new Date().toISOString(),
+        status: 'new',
+        visitorSessionId: sessionId
+      };
+      const updated = [newInquiry, ...existing];
+      await savePersistentData('webdev_inquiries', updated);
+      syncSectionToSupabase('inquiries', updated).catch(() => {});
+
+      // Mark this session as having submitted an inquiry
+      await markContactSubmittedInCurrentSession();
+
+      // Dispatch event so Admin Portal or Header badge updates live
+      window.dispatchEvent(new CustomEvent('webdev:inquiry_updated', { detail: { count: updated.length } }));
+    } catch (err) {
+      console.error('Failed to save inquiry:', err);
+    }
+
     setSubmitted(true);
   };
 
@@ -103,7 +135,7 @@ export const ContactPage: React.FC<ContactPageProps> = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-blue-950">Admissions Helpline</h4>
-                    <p className="mt-0.5 font-bold text-amber-600">+1 (800) 555-DEV-EDU</p>
+                    <p className="mt-0.5 font-bold text-amber-600">03019249721</p>
                     <p className="text-xs text-blue-800/70">Direct desk for parent consultations</p>
                   </div>
                 </div>
@@ -114,7 +146,7 @@ export const ContactPage: React.FC<ContactPageProps> = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-blue-950">Email Contact</h4>
-                    <p className="mt-0.5 font-bold text-blue-950">admissions@webdeveloper.edu</p>
+                    <p className="mt-0.5 font-bold text-blue-950">fahadiqbal9542@gmail.com</p>
                     <p className="text-xs text-blue-800/70">Response within 24 business hours</p>
                   </div>
                 </div>

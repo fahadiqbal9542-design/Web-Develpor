@@ -5,38 +5,53 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage, DEFAULT_ENVIRONMENT_CARDS } from './components/pages/HomePage';
 import { AboutPage } from './components/pages/AboutPage';
-import { AcademicsPage } from './components/pages/AcademicsPage';
 import { CampusPage } from './components/pages/CampusPage';
 import { GalleryPage } from './components/pages/GalleryPage';
-import { EventsPage } from './components/pages/EventsPage';
 import { ContactPage } from './components/pages/ContactPage';
 import { AttendancePage } from './components/pages/AttendancePage';
+import { OnlineClassesPage } from './components/pages/OnlineClassesPage';
 import { AdmissionModal } from './components/AdmissionModal';
 import { DatabaseModal } from './components/DatabaseModal';
+import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { ScrollToTop } from './components/ScrollToTop';
 import { FloatingSideContact } from './components/FloatingSideContact';
 import { WebsiteLockScreen } from './components/WebsiteLockScreen';
 import founderProfileAvatar from './assets/images/founder_profile_avatar_1788521375468.jpg';
 import { idbGet, savePersistentData } from './utils/imageStorage';
+import { trackPageVisit } from './utils/visitorTracker';
+import {
+  syncSectionToSupabase,
+  isSupabaseConfigured,
+  pullFromSupabase,
+  subscribeToSupabase
+} from './utils/supabase';
 
 export default function App() {
   const [activePage, setActivePage] = useState<PageId>('home');
   const [isApplyModalOpen, setIsApplyModalOpen] = useState<boolean>(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState<boolean>(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
-  // Master Website Lock State (starts locked until user enters king295.)
+  // Automatically track every page visited by any user in real-time
+  useEffect(() => {
+    trackPageVisit(activePage);
+  }, [activePage]);
+
+  // Master Website Lock State (defaults to unlocked so website content is immediately visible)
   const [isSiteUnlocked, setIsSiteUnlocked] = useState<boolean>(() => {
     try {
-      return sessionStorage.getItem('webdev_site_unlocked') === 'true';
+      const manuallyLocked = sessionStorage.getItem('webdev_site_manually_locked');
+      if (manuallyLocked === 'true') return false;
+      return true;
     } catch (e) {
-      return false;
+      return true;
     }
   });
 
   const handleUnlockSite = () => {
     setIsSiteUnlocked(true);
     try {
-      sessionStorage.setItem('webdev_site_unlocked', 'true');
+      sessionStorage.removeItem('webdev_site_manually_locked');
     } catch (e) {
       console.error(e);
     }
@@ -45,8 +60,7 @@ export default function App() {
   const handleLockSite = () => {
     setIsSiteUnlocked(false);
     try {
-      sessionStorage.removeItem('webdev_site_unlocked');
-      localStorage.removeItem('webdev_site_unlocked');
+      sessionStorage.setItem('webdev_site_manually_locked', 'true');
     } catch (e) {
       console.error(e);
     }
@@ -62,8 +76,12 @@ export default function App() {
           if (c.id === 'card-1' && c.title === 'High-Speed Dual-Monitor Coding Lab') {
             return { ...c, title: 'Mushahid web developer' };
           }
-          if (c.id === 'card-2' && c.title === 'Annual Hackathon Grand Finals') {
-            return { ...c, title: 'Abdullah web developer' };
+          if (c.id === 'card-2') {
+            return {
+              ...c,
+              title: c.title === 'Annual Hackathon Grand Finals' ? 'Abdullah web developer' : c.title,
+              targetPage: (c.targetPage as string) === 'events' ? 'classes' : c.targetPage
+            };
           }
           if (c.id === 'card-3' && c.title === 'Modern Collaborative Library & Study Hub') {
             return { ...c, title: 'Bilal web developer' };
@@ -126,12 +144,34 @@ export default function App() {
         setFacultyImages(stored);
       }
     });
+
+    // Real-time Supabase listener
+    if (isSupabaseConfigured()) {
+      const unsub = subscribeToSupabase((payload) => {
+        if (payload.envCards && Array.isArray(payload.envCards)) {
+          setCards(payload.envCards);
+          savePersistentData('webdev_home_env_cards', payload.envCards);
+        }
+        if (payload.founderDp) {
+          setFounderDp(payload.founderDp);
+          savePersistentData('webdev_founder_dp', payload.founderDp);
+        }
+        if (payload.facultyImages) {
+          setFacultyImages(payload.facultyImages);
+          savePersistentData('webdev_faculty_images', payload.facultyImages);
+        }
+      });
+      return () => {
+        unsub();
+      };
+    }
   }, []);
 
   const handleUpdateCardImage = (cardId: string, imageSrc: string) => {
     setCards((prev) => {
       const updated = prev.map((c) => (c.id === cardId ? { ...c, image: imageSrc } : c));
       savePersistentData('webdev_home_env_cards', updated);
+      syncSectionToSupabase('envCards', updated).catch(() => {});
       return updated;
     });
   };
@@ -139,12 +179,14 @@ export default function App() {
   const handleUpdateFounderDp = (imageSrc: string) => {
     setFounderDp(imageSrc);
     savePersistentData('webdev_founder_dp', imageSrc);
+    syncSectionToSupabase('founderDp', imageSrc).catch(() => {});
   };
 
   const handleUpdateFacultyImage = (id: string, imageSrc: string) => {
     setFacultyImages((prev) => {
       const updated = { ...prev, [id]: imageSrc };
       savePersistentData('webdev_faculty_images', updated);
+      syncSectionToSupabase('facultyImages', updated).catch(() => {});
       return updated;
     });
   };
@@ -154,6 +196,7 @@ export default function App() {
       const updated = { ...prev };
       delete updated[id];
       savePersistentData('webdev_faculty_images', updated);
+      syncSectionToSupabase('facultyImages', updated).catch(() => {});
       return updated;
     });
   };
@@ -176,6 +219,7 @@ export default function App() {
         onNavigate={handleNavigate}
         onOpenApplyModal={() => setIsApplyModalOpen(true)}
         onOpenDatabaseModal={() => setIsDbModalOpen(true)}
+        onOpenAdminModal={() => setIsAdminModalOpen(true)}
         onLockSite={handleLockSite}
       />
 
@@ -219,21 +263,6 @@ export default function App() {
             </motion.div>
           )}
 
-          {activePage === 'academics' && (
-            <motion.div
-              key="page-academics"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-            >
-              <AcademicsPage
-                onNavigate={handleNavigate}
-                onOpenApplyModal={() => setIsApplyModalOpen(true)}
-              />
-            </motion.div>
-          )}
-
           {activePage === 'campus' && (
             <motion.div
               key="page-campus"
@@ -263,15 +292,15 @@ export default function App() {
             </motion.div>
           )}
 
-          {activePage === 'events' && (
+          {activePage === 'classes' && (
             <motion.div
-              key="page-events"
+              key="page-classes"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4, ease: "easeInOut" }}
             >
-              <EventsPage
+              <OnlineClassesPage
                 onNavigate={handleNavigate}
                 onOpenApplyModal={() => setIsApplyModalOpen(true)}
               />
@@ -312,6 +341,7 @@ export default function App() {
         onNavigate={handleNavigate}
         onOpenApplyModal={() => setIsApplyModalOpen(true)}
         onOpenDatabaseModal={() => setIsDbModalOpen(true)}
+        onOpenAdminModal={() => setIsAdminModalOpen(true)}
         onLockSite={handleLockSite}
       />
 
@@ -324,10 +354,11 @@ export default function App() {
       {/* 6. SCROLL TO TOP FLOATING BUTTON */}
       <ScrollToTop />
 
-      {/* 7. FLOATING RIGHT SIDE CONTACT DOCK (PHONE, EMAIL, LOCATION, DATABASE, LOCK) */}
+      {/* 7. FLOATING RIGHT SIDE CONTACT DOCK (PHONE, EMAIL, LOCATION, DATABASE, LOCK, ADMIN) */}
       <FloatingSideContact
         onNavigate={handleNavigate}
         onOpenDatabaseModal={() => setIsDbModalOpen(true)}
+        onOpenAdminModal={() => setIsAdminModalOpen(true)}
         onLockSite={handleLockSite}
       />
 
@@ -338,6 +369,14 @@ export default function App() {
         onDatabaseRestored={() => {
           window.location.reload();
         }}
+      />
+
+      {/* 9. ADMIN DASHBOARD & VISITOR PAGE TRACKING PORTAL */}
+      <AdminDashboardModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        onOpenDatabaseModal={() => setIsDbModalOpen(true)}
+        onLockSite={handleLockSite}
       />
     </div>
   );

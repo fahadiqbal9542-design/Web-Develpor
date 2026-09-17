@@ -9,6 +9,7 @@ interface FooterProps {
   onPlayPromo?: () => void;
   onOpenApplyModal: () => void;
   onOpenDatabaseModal?: () => void;
+  onOpenAdminModal?: () => void;
   onLockSite?: () => void;
 }
 
@@ -16,6 +17,7 @@ export const Footer: React.FC<FooterProps> = ({
   onNavigate,
   onOpenApplyModal,
   onOpenDatabaseModal,
+  onOpenAdminModal,
   onLockSite,
 }) => {
   const scrollToTop = () => {
@@ -92,14 +94,6 @@ export const Footer: React.FC<FooterProps> = ({
             </li>
             <li>
               <button
-                onClick={() => onNavigate('academics')}
-                className="hover:text-amber-300 transition-colors text-blue-200"
-              >
-                Academics
-              </button>
-            </li>
-            <li>
-              <button
                 onClick={() => onNavigate('campus')}
                 className="hover:text-amber-300 transition-colors text-blue-200"
               >
@@ -108,18 +102,19 @@ export const Footer: React.FC<FooterProps> = ({
             </li>
             <li>
               <button
-                onClick={() => onNavigate('gallery')}
-                className="hover:text-amber-300 transition-colors text-blue-200"
+                onClick={() => onNavigate('classes')}
+                className="hover:text-amber-300 transition-colors text-blue-200 flex items-center gap-1.5"
               >
-                Gallery
+                <span>Online Classes</span>
+                <span className="text-[10px] bg-red-600 text-white font-bold px-1.5 py-0.2 rounded">Live</span>
               </button>
             </li>
             <li>
               <button
-                onClick={() => onNavigate('events')}
+                onClick={() => onNavigate('gallery')}
                 className="hover:text-amber-300 transition-colors text-blue-200"
               >
-                Events
+                Gallery
               </button>
             </li>
             <li>
@@ -139,6 +134,18 @@ export const Footer: React.FC<FooterProps> = ({
                 Contact Us
               </button>
             </li>
+            {onOpenAdminModal && (
+              <li>
+                <button
+                  id="footer-admin-portal-btn"
+                  onClick={onOpenAdminModal}
+                  className="hover:text-amber-300 transition-colors text-amber-400 font-extrabold flex items-center gap-1.5 cursor-pointer pt-1"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Admin Control Portal</span>
+                </button>
+              </li>
+            )}
             {onOpenDatabaseModal && (
               <li>
                 <button
@@ -191,11 +198,11 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
             <div className="flex items-center gap-2.5">
               <Phone className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>+1 (800) 555-DEV-EDU</span>
+              <span>03019249721</span>
             </div>
             <div className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>admissions@webdeveloper.edu</span>
+              <span>fahadiqbal9542@gmail.com</span>
             </div>
           </div>
         </div>

@@ -121,3 +121,110 @@ export async function pullFromSupabase(): Promise<{ success: boolean; count?: nu
     return { success: false, error: err.message || 'Unknown error' };
   }
 }
+
+/**
+ * Syncs a single section's data to Supabase
+ */
+export async function syncSectionToSupabase(
+  sectionKey:
+    | 'envCards'
+    | 'founderDp'
+    | 'facultyImages'
+    | 'galleryPhotos'
+    | 'studentsAttendance'
+    | 'onlineClasses'
+    | 'campusFacilities'
+    | 'admissions'
+    | 'inquiries'
+    | 'visitorHistory',
+  sectionData: any
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return { success: false, error: 'Supabase credentials are not configured.' };
+  }
+
+  try {
+    // 1. Fetch current data first or upsert merged
+    const { data: existingRow } = await supabase
+      .from('school_app_data')
+      .select('data')
+      .eq('id', 'main_site_data')
+      .maybeSingle();
+
+    const currentData = existingRow?.data || {};
+    const updatedData = {
+      ...currentData,
+      [sectionKey]: sectionData,
+    };
+
+    const { error } = await supabase
+      .from('school_app_data')
+      .upsert(
+        {
+          id: 'main_site_data',
+          data: updatedData,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to sync section' };
+  }
+}
+
+let syncTimeout: any = null;
+/**
+ * Auto-syncs entire database to Supabase with debounce
+ */
+export function queueSupabaseSync(payload: DatabaseBackupPayload) {
+  if (!isSupabaseConfigured()) return;
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    pushToSupabase(payload).catch((err) => {
+      console.warn('Background Supabase sync failed:', err);
+    });
+  }, 2000);
+}
+
+/**
+ * Subscribe to Supabase realtime changes
+ */
+export function subscribeToSupabase(onUpdate: (data: any) => void): (() => void) | null {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  try {
+    const channel = supabase
+      .channel('school_app_data_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'school_app_data',
+          filter: 'id=eq.main_site_data',
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.data) {
+            onUpdate(payload.new.data);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  } catch (err) {
+    console.error('Supabase subscription error:', err);
+    return null;
+  }
+}
+

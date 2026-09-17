@@ -360,10 +360,9 @@ export const IntroPromo: React.FC<IntroPromoProps> = ({ onComplete, onSelectPage
                   const labels: Record<PageId, string> = {
                     home: 'Home Page',
                     about: 'About Page',
-                    academics: 'Academics Page',
                     campus: 'Campus Page',
+                    classes: 'Online Classes',
                     gallery: 'Gallery Page',
-                    events: 'Events Page',
                     contact: 'Contact Page',
                     attendance: 'Attendance Portal'
                   };

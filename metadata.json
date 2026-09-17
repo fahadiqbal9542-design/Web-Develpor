@@ -1,6 +1,6 @@
 {
   "name": "WEB DEVELOPER",
-  "description": "Official website for WEB DEVELOPER School featuring Home, About Us, Academics, Campus, Gallery, Events, and Contact Us.",
+  "description": "Official website for WEB DEVELOPER School featuring Home, About Us, Campus, Online Classes, Gallery, and Contact Us.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

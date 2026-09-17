@@ -1,4 +1,22 @@
-export type PageId = 'home' | 'about' | 'academics' | 'campus' | 'gallery' | 'events' | 'contact' | 'attendance';
+export type PageId = 'home' | 'about' | 'classes' | 'campus' | 'gallery' | 'contact' | 'attendance';
+
+export interface OnlineClass {
+  id: string;
+  title: string;
+  instructor: string;
+  instructorRole?: string;
+  instructorAvatar?: string;
+  subject: string;
+  schedule: string;
+  duration?: string;
+  status: 'live' | 'upcoming' | 'recorded';
+  level: string;
+  meetingUrl: string;
+  image: string;
+  description: string;
+  enrolledStudentsCount: number;
+  topics: string[];
+}
 
 export type PromoStage = 'logo' | 'name' | 'open' | 'preview_tour' | 'completed';
 
@@ -70,3 +88,76 @@ export interface EnvironmentCard {
   image: string;
   targetPage: PageId;
 }
+
+export interface SchoolEvent {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  type: 'hackathon' | 'workshops' | 'admissions' | string;
+  badge: string;
+  description: string;
+  highlights: string[];
+  image: string;
+}
+
+export interface CampusFacility {
+  id: string;
+  name: string;
+  category: string;
+  capacity: string;
+  description: string;
+  specs: string[];
+  image: string;
+}
+
+export interface AdmissionApplication {
+  id: string;
+  studentName: string;
+  parentName: string;
+  email: string;
+  phone: string;
+  gradeApplying: string;
+  priorExperience: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface ContactInquiry {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  studentGrade?: string;
+  interestTrack?: string;
+  message?: string;
+  createdAt: string;
+  status?: 'new' | 'contacted' | 'resolved';
+  visitorSessionId?: string;
+}
+
+export interface PageVisitEvent {
+  pageId: PageId;
+  pageName: string;
+  timestamp: string; // ISO string
+  formattedTime: string;
+  timeSpentSeconds?: number;
+}
+
+export interface VisitorSession {
+  sessionId: string;
+  visitorId: string;
+  firstVisitedAt: string;
+  lastActiveAt: string;
+  deviceType: 'Desktop' | 'Mobile' | 'Tablet';
+  browser: string;
+  os: string;
+  screenResolution: string;
+  language: string;
+  referrer: string;
+  history: PageVisitEvent[];
+  pageViewsCount: number;
+  contactSubmitted?: boolean;
+}
+

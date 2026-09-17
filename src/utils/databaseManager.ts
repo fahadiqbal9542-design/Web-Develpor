@@ -1,8 +1,16 @@
 // Centralized Database & Backup Management for Web Developer School
-// Handles full offline persistence (IndexedDB + LocalStorage) and seamless export/import for Vercel deployment.
+// Handles full offline persistence (IndexedDB + LocalStorage) and seamless export/import for Vercel deployment & Supabase sync.
 
 import { idbGet, idbSet, savePersistentData } from './imageStorage';
-import { EnvironmentCard, StudentAttendanceRecord, GalleryItem } from '../types';
+import {
+  EnvironmentCard,
+  StudentAttendanceRecord,
+  GalleryItem,
+  OnlineClass,
+  CampusFacility,
+  AdmissionApplication,
+  ContactInquiry
+} from '../types';
 
 export interface DatabaseBackupPayload {
   version: string;
@@ -14,6 +22,10 @@ export interface DatabaseBackupPayload {
     facultyImages: Record<string, string>;
     galleryPhotos: GalleryItem[];
     studentsAttendance: StudentAttendanceRecord[];
+    onlineClasses: OnlineClass[];
+    campusFacilities: CampusFacility[];
+    admissions: AdmissionApplication[];
+    inquiries: ContactInquiry[];
   };
 }
 
@@ -23,13 +35,27 @@ export interface DatabaseStats {
   facultyImagesCount: number;
   galleryPhotosCount: number;
   studentsCount: number;
+  onlineClassesCount: number;
+  campusFacilitiesCount: number;
+  admissionsCount: number;
+  inquiriesCount: number;
   totalImagesCount: number;
   estimatedSizeKb: number;
 }
 
-// 1. Fetch current live database state across IndexedDB & LocalStorage
+// 1. Fetch current live database state across all sections
 export async function getFullDatabasePayload(): Promise<DatabaseBackupPayload> {
-  const [envCards, founderDp, facultyImages, galleryPhotos, studentsAttendance] = await Promise.all([
+  const [
+    envCards,
+    founderDp,
+    facultyImages,
+    galleryPhotos,
+    studentsAttendance,
+    onlineClasses,
+    campusFacilities,
+    admissions,
+    inquiries
+  ] = await Promise.all([
     idbGet<EnvironmentCard[]>('webdev_home_env_cards').then(
       (res) => res || JSON.parse(localStorage.getItem('webdev_home_env_cards') || '[]')
     ),
@@ -45,10 +71,22 @@ export async function getFullDatabasePayload(): Promise<DatabaseBackupPayload> {
     idbGet<StudentAttendanceRecord[]>('webdev_students_attendance').then(
       (res) => res || JSON.parse(localStorage.getItem('webdev_students_attendance') || '[]')
     ),
+    idbGet<OnlineClass[]>('webdev_online_classes').then(
+      (res) => res || JSON.parse(localStorage.getItem('webdev_online_classes') || '[]')
+    ),
+    idbGet<CampusFacility[]>('webdev_campus_facilities').then(
+      (res) => res || JSON.parse(localStorage.getItem('webdev_campus_facilities') || '[]')
+    ),
+    idbGet<AdmissionApplication[]>('webdev_admissions').then(
+      (res) => res || JSON.parse(localStorage.getItem('webdev_admissions') || '[]')
+    ),
+    idbGet<ContactInquiry[]>('webdev_inquiries').then(
+      (res) => res || JSON.parse(localStorage.getItem('webdev_inquiries') || '[]')
+    ),
   ]);
 
   return {
-    version: '1.0',
+    version: '2.0',
     app: 'Web Developer School',
     exportedAt: new Date().toISOString(),
     data: {
@@ -57,6 +95,10 @@ export async function getFullDatabasePayload(): Promise<DatabaseBackupPayload> {
       facultyImages: facultyImages || {},
       galleryPhotos: galleryPhotos || [],
       studentsAttendance: studentsAttendance || [],
+      onlineClasses: onlineClasses || [],
+      campusFacilities: campusFacilities || [],
+      admissions: admissions || [],
+      inquiries: inquiries || [],
     },
   };
 }
@@ -78,7 +120,7 @@ export async function downloadDatabaseBackup(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-// 3. Restore / Import Database JSON into IndexedDB + LocalStorage
+// 3. Restore / Import Database JSON into IndexedDB + LocalStorage for all sections
 export async function restoreDatabaseBackup(jsonString: string): Promise<boolean> {
   try {
     const parsed = JSON.parse(jsonString);
@@ -103,6 +145,18 @@ export async function restoreDatabaseBackup(jsonString: string): Promise<boolean
     if (data.studentsAttendance && Array.isArray(data.studentsAttendance)) {
       await savePersistentData('webdev_students_attendance', data.studentsAttendance);
     }
+    if (data.onlineClasses && Array.isArray(data.onlineClasses)) {
+      await savePersistentData('webdev_online_classes', data.onlineClasses);
+    }
+    if (data.campusFacilities && Array.isArray(data.campusFacilities)) {
+      await savePersistentData('webdev_campus_facilities', data.campusFacilities);
+    }
+    if (data.admissions && Array.isArray(data.admissions)) {
+      await savePersistentData('webdev_admissions', data.admissions);
+    }
+    if (data.inquiries && Array.isArray(data.inquiries)) {
+      await savePersistentData('webdev_inquiries', data.inquiries);
+    }
 
     return true;
   } catch (err) {
@@ -111,7 +165,7 @@ export async function restoreDatabaseBackup(jsonString: string): Promise<boolean
   }
 }
 
-// 4. Calculate stats on currently stored database records
+// 4. Calculate stats on currently stored database records across all sections
 export async function getDatabaseStats(): Promise<DatabaseStats> {
   const payload = await getFullDatabasePayload();
   const json = JSON.stringify(payload);
@@ -131,6 +185,12 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
   if (payload.data.studentsAttendance) {
     totalImagesCount += payload.data.studentsAttendance.filter((s) => !!s.avatar).length;
   }
+  if (payload.data.onlineClasses) {
+    totalImagesCount += payload.data.onlineClasses.filter((c) => !!c.image || !!c.instructorAvatar).length;
+  }
+  if (payload.data.campusFacilities) {
+    totalImagesCount += payload.data.campusFacilities.filter((f) => !!f.image).length;
+  }
 
   return {
     cardsCount: payload.data.envCards?.length || 0,
@@ -138,6 +198,10 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
     facultyImagesCount: Object.keys(payload.data.facultyImages || {}).length,
     galleryPhotosCount: payload.data.galleryPhotos?.length || 0,
     studentsCount: payload.data.studentsAttendance?.length || 0,
+    onlineClassesCount: payload.data.onlineClasses?.length || 0,
+    campusFacilitiesCount: payload.data.campusFacilities?.length || 0,
+    admissionsCount: payload.data.admissions?.length || 0,
+    inquiriesCount: payload.data.inquiries?.length || 0,
     totalImagesCount,
     estimatedSizeKb,
   };

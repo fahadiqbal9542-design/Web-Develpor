@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, GraduationCap, Send, Sparkles } from 'lucide-react';
 import { SCHOOL_FULL_TITLE } from '../data/schoolData';
+import { savePersistentData, loadPersistentData } from '../utils/imageStorage';
+import { syncSectionToSupabase } from '../utils/supabase';
+import { AdmissionApplication } from '../types';
 
 interface AdmissionModalProps {
   isOpen: boolean;
@@ -22,9 +25,30 @@ export const AdmissionModal: React.FC<AdmissionModalProps> = ({ isOpen, onClose 
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.studentName || !formData.email) return;
+
+    try {
+      const existing = (await loadPersistentData<AdmissionApplication[]>('webdev_admissions', [])) || [];
+      const newApp: AdmissionApplication = {
+        id: `adm-${Date.now()}`,
+        studentName: formData.studentName.trim(),
+        parentName: formData.parentName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        gradeApplying: formData.gradeApplying,
+        priorExperience: formData.priorExperience,
+        notes: formData.notes.trim(),
+        createdAt: new Date().toISOString()
+      };
+      const updated = [newApp, ...existing];
+      await savePersistentData('webdev_admissions', updated);
+      syncSectionToSupabase('admissions', updated).catch(() => {});
+    } catch (err) {
+      console.error('Failed to save admission:', err);
+    }
+
     setSubmitted(true);
   };
 

@@ -3,6 +3,7 @@ import { PageId, GalleryItem } from '../../types';
 import { GALLERY_ITEMS } from '../../data/schoolData';
 import { AddImageModal } from '../AddImageModal';
 import { idbGet, savePersistentData, compressImage } from '../../utils/imageStorage';
+import { syncSectionToSupabase } from '../../utils/supabase';
 import {
   Play,
   Sparkles,
@@ -63,6 +64,7 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({ onNavigate }) => {
     const updated = [newItem, ...galleryItems];
     setGalleryItems(updated);
     savePersistentData('webdev_gallery_photos', updated);
+    syncSectionToSupabase('galleryPhotos', updated).catch(() => {});
     setNotification(`"${newItem.title}" added to gallery successfully!`);
     setTimeout(() => setNotification(null), 3500);
   };
@@ -104,6 +106,7 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({ onNavigate }) => {
       const updated = [...newItems, ...galleryItems];
       setGalleryItems(updated);
       await savePersistentData('webdev_gallery_photos', updated);
+      syncSectionToSupabase('galleryPhotos', updated).catch(() => {});
       setSelectedCategory('all');
       setNotification(`${newItems.length} photo(s) added to gallery successfully!`);
       setTimeout(() => setNotification(null), 3500);
@@ -122,6 +125,7 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({ onNavigate }) => {
     const updated = galleryItems.filter((item) => item.id !== id);
     setGalleryItems(updated);
     savePersistentData('webdev_gallery_photos', updated);
+    syncSectionToSupabase('galleryPhotos', updated).catch(() => {});
     if (activeItem?.id === id) {
       setActiveItem(null);
     }
@@ -133,6 +137,7 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({ onNavigate }) => {
     if (galleryItems.length === 0) return;
     setGalleryItems([]);
     savePersistentData('webdev_gallery_photos', []);
+    syncSectionToSupabase('galleryPhotos', []).catch(() => {});
     setActiveItem(null);
     setNotification('All images removed from gallery.');
     setTimeout(() => setNotification(null), 3000);

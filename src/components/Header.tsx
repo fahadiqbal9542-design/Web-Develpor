@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { PageId } from '../types';
+import React, { useState, useEffect } from 'react';
+import { PageId, ContactInquiry } from '../types';
 import { SchoolLogo } from './SchoolLogo';
-import { Menu, X, Sparkles, PhoneCall, GraduationCap, Database, Lock } from 'lucide-react';
+import { Menu, X, Sparkles, PhoneCall, GraduationCap, Database, Lock, ShieldCheck } from 'lucide-react';
+import { loadPersistentData } from '../utils/imageStorage';
 
 interface HeaderProps {
   activePage: PageId;
@@ -9,6 +10,7 @@ interface HeaderProps {
   onPlayPromo?: () => void;
   onOpenApplyModal: () => void;
   onOpenDatabaseModal: () => void;
+  onOpenAdminModal: () => void;
   onLockSite?: () => void;
 }
 
@@ -17,17 +19,36 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onOpenApplyModal,
   onOpenDatabaseModal,
+  onOpenAdminModal,
   onLockSite,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [newInquiriesCount, setNewInquiriesCount] = useState(0);
+
+  // Check unread/new inquiries for notification badge
+  useEffect(() => {
+    const checkInquiries = async () => {
+      try {
+        const list = (await loadPersistentData<ContactInquiry[]>('webdev_inquiries', [])) || [];
+        const unread = list.filter((i) => !i.status || i.status === 'new').length;
+        setNewInquiriesCount(unread);
+      } catch {
+        // ignore
+      }
+    };
+    checkInquiries();
+
+    const handleUpdate = () => checkInquiries();
+    window.addEventListener('webdev:inquiry_updated', handleUpdate);
+    return () => window.removeEventListener('webdev:inquiry_updated', handleUpdate);
+  }, []);
 
   const navItems: { id: PageId; label: string }[] = [
     { id: 'home', label: 'Home' },
     { id: 'about', label: 'About Us' },
-    { id: 'academics', label: 'Academics' },
     { id: 'campus', label: 'Campus' },
+    { id: 'classes', label: 'Online Classes' },
     { id: 'gallery', label: 'Gallery' },
-    { id: 'events', label: 'Events' },
     { id: 'attendance', label: 'Attendance' },
     { id: 'contact', label: 'Contact Us' },
   ];
@@ -52,6 +73,21 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         <div className="flex items-center gap-4 text-blue-100">
           <button
+            id="top-admin-portal-btn"
+            onClick={onOpenAdminModal}
+            className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 font-extrabold transition-colors cursor-pointer text-xs bg-blue-900/80 hover:bg-blue-800 px-2.5 py-1 rounded-lg border border-amber-400/50"
+            title="Open Admin Dashboard (Visitor History & Contact Messages)"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            <span>Admin Portal</span>
+            {newInquiriesCount > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-xs">
+                {newInquiriesCount}
+              </span>
+            )}
+          </button>
+          <span className="text-blue-700">|</span>
+          <button
             id="top-database-sync-btn"
             onClick={onOpenDatabaseModal}
             className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 font-bold transition-colors cursor-pointer text-xs"
@@ -75,9 +111,9 @@ export const Header: React.FC<HeaderProps> = ({
             </>
           )}
           <span className="text-blue-700">|</span>
-          <a href="tel:+1800555932" className="flex items-center gap-1.5 hover:text-amber-300 transition-colors font-medium">
+          <a href="tel:03019249721" className="flex items-center gap-1.5 hover:text-amber-300 transition-colors font-medium">
             <PhoneCall className="w-3 h-3 text-amber-400" />
-            +1 (800) 555-DEV-EDU
+            03019249721
           </a>
         </div>
       </div>
@@ -118,8 +154,23 @@ export const Header: React.FC<HeaderProps> = ({
             })}
           </nav>
 
-          {/* Actions on Desktop: Database Manager & Apply Now */}
+          {/* Actions on Desktop: Admin, Database Manager & Apply Now */}
           <div className="hidden sm:flex items-center gap-2.5">
+            <button
+              id="header-admin-btn"
+              onClick={onOpenAdminModal}
+              className="relative px-3.5 py-2 text-xs font-black text-white bg-[#0B2347] hover:bg-[#123363] border-2 border-amber-400 rounded-xl shadow-sm transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              title="Admin Control Panel (Visitor Browsing History & Contact Messages)"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span>Admin</span>
+              {newInquiriesCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full border-2 border-white shadow-xs animate-pulse">
+                  {newInquiriesCount}
+                </span>
+              )}
+            </button>
+
             <button
               id="header-database-btn"
               onClick={onOpenDatabaseModal}
@@ -175,6 +226,25 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="pt-2 flex flex-col gap-2">
+            <button
+              id="mobile-admin-btn"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenAdminModal();
+              }}
+              className="w-full flex items-center justify-between py-3 px-4 rounded-xl border-2 border-amber-400 text-white font-black text-sm bg-slate-950 shadow-md cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
+                <span>Admin Dashboard (Tracking & Messages)</span>
+              </div>
+              {newInquiriesCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-black px-2 py-0.5 rounded-full">
+                  {newInquiriesCount} New
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
