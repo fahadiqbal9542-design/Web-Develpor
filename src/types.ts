@@ -1,4 +1,4 @@
-export type PageId = 'home' | 'about' | 'classes' | 'campus' | 'gallery' | 'contact' | 'attendance';
+export type PageId = 'home' | 'about' | 'classes' | 'campus' | 'gallery' | 'contact' | 'attendance' | 'admissions';
 
 export interface OnlineClass {
   id: string;

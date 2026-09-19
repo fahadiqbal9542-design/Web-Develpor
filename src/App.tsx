@@ -10,6 +10,7 @@ import { GalleryPage } from './components/pages/GalleryPage';
 import { ContactPage } from './components/pages/ContactPage';
 import { AttendancePage } from './components/pages/AttendancePage';
 import { OnlineClassesPage } from './components/pages/OnlineClassesPage';
+import { AdmissionsPage } from './components/pages/AdmissionsPage';
 import { AdmissionModal } from './components/AdmissionModal';
 import { DatabaseModal } from './components/DatabaseModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
@@ -260,6 +261,18 @@ export default function App() {
                 onUpdateFacultyImage={handleUpdateFacultyImage}
                 onRemoveFacultyImage={handleRemoveFacultyImage}
               />
+            </motion.div>
+          )}
+
+          {activePage === 'admissions' && (
+            <motion.div
+              key="page-admissions"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+            >
+              <AdmissionsPage onNavigate={handleNavigate} />
             </motion.div>
           )}
 

@@ -364,7 +364,8 @@ export const IntroPromo: React.FC<IntroPromoProps> = ({ onComplete, onSelectPage
                     classes: 'Online Classes',
                     gallery: 'Gallery Page',
                     contact: 'Contact Page',
-                    attendance: 'Attendance Portal'
+                    attendance: 'Attendance Portal',
+                    admissions: 'Admissions Form'
                   };
                   return (
                     <button

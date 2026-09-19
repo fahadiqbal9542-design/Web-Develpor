@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Phone, Mail, MapPin, ExternalLink, Check, Copy, X, Database, Lock, ShieldCheck } from 'lucide-react';
+import { Phone, Mail, MapPin, ExternalLink, Check, Copy, X, Database, Lock, ShieldCheck, Video, Plus } from 'lucide-react';
 import { PageId, ContactInquiry } from '../types';
 import { loadPersistentData } from '../utils/imageStorage';
 

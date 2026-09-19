@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageId, ContactInquiry } from '../types';
 import { SchoolLogo } from './SchoolLogo';
-import { Menu, X, Sparkles, PhoneCall, GraduationCap, Database, Lock, ShieldCheck } from 'lucide-react';
+import { Menu, X, Sparkles, PhoneCall, GraduationCap, Database, Lock, ShieldCheck, Plus } from 'lucide-react';
 import { loadPersistentData } from '../utils/imageStorage';
 
 interface HeaderProps {
@@ -43,9 +43,10 @@ export const Header: React.FC<HeaderProps> = ({
     return () => window.removeEventListener('webdev:inquiry_updated', handleUpdate);
   }, []);
 
-  const navItems: { id: PageId; label: string }[] = [
+  const navItems: { id: PageId; label: string; badge?: string }[] = [
     { id: 'home', label: 'Home' },
     { id: 'about', label: 'About Us' },
+    { id: 'admissions', label: 'Admissions Form', badge: '2026' },
     { id: 'campus', label: 'Campus' },
     { id: 'classes', label: 'Online Classes' },
     { id: 'gallery', label: 'Gallery' },
@@ -131,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Desktop Navigation matching image */}
-          <nav className="hidden lg:flex items-center gap-6">
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-5">
             {navItems.map((item) => {
               const isActive = activePage === item.id;
               return (
@@ -139,13 +140,18 @@ export const Header: React.FC<HeaderProps> = ({
                   key={item.id}
                   id={`nav-${item.id}`}
                   onClick={() => handleNavClick(item.id)}
-                  className={`text-sm font-bold transition-all relative py-1.5 ${
+                  className={`text-xs xl:text-sm font-bold transition-all relative py-1.5 flex items-center gap-1.5 ${
                     isActive
                       ? 'text-[#0B2347] font-extrabold'
                       : 'text-slate-600 hover:text-[#0B2347]'
                   }`}
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  {item.badge && (
+                    <span className="text-[10px] font-black uppercase px-1.5 py-0.2 rounded-full bg-amber-400 text-blue-950 shadow-xs">
+                      {item.badge}
+                    </span>
+                  )}
                   {isActive && (
                     <span className="absolute bottom-0 left-0 w-full h-[3px] bg-[#0B2347] rounded-full" />
                   )}
@@ -183,10 +189,10 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               id="header-apply-btn"
-              onClick={onOpenApplyModal}
-              className="px-6 py-2.5 text-sm font-bold text-white bg-[#0B2347] hover:bg-[#123363] rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
+              onClick={() => handleNavClick('admissions')}
+              className="px-5 py-2.5 text-xs xl:text-sm font-bold text-white bg-[#0B2347] hover:bg-[#123363] rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
             >
-              Apply Now
+              <span>Apply Now</span>
             </button>
           </div>
 
@@ -218,7 +224,14 @@ export const Header: React.FC<HeaderProps> = ({
                     isActive ? 'bg-blue-800 text-white' : 'text-blue-950 hover:bg-blue-50'
                   }`}
                 >
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-400 text-blue-950">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
                   {isActive && <span className="text-xs bg-amber-400 text-blue-950 font-bold px-2 py-0.5 rounded">Active</span>}
                 </button>
               );

@@ -21,7 +21,25 @@ export const Footer: React.FC<FooterProps> = ({
   onLockSite,
 }) => {
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+    if (document.documentElement) {
+      try {
+        document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      } catch {
+        document.documentElement.scrollTop = 0;
+      }
+    }
+    if (document.body) {
+      try {
+        document.body.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      } catch {
+        document.body.scrollTop = 0;
+      }
+    }
   };
 
   return (
@@ -90,6 +108,15 @@ export const Footer: React.FC<FooterProps> = ({
                 className="hover:text-amber-300 transition-colors text-blue-200"
               >
                 About Us
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => onNavigate('admissions')}
+                className="hover:text-amber-300 transition-colors text-blue-200 flex items-center gap-1.5"
+              >
+                <span>Admissions Form</span>
+                <span className="text-[10px] bg-amber-400 text-blue-950 font-black px-1.5 py-0.2 rounded">2026</span>
               </button>
             </li>
             <li>
@@ -218,11 +245,11 @@ export const Footer: React.FC<FooterProps> = ({
             </span>
             <button
               onClick={scrollToTop}
-              className="flex items-center gap-1 text-blue-300 hover:text-amber-300 transition-colors"
-              title="Back to top"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-900/80 hover:bg-amber-400 hover:text-blue-950 text-amber-300 font-bold text-xs transition-all border border-amber-400/30 cursor-pointer shadow-sm"
+              title="Back to top (اوپر جائیں)"
             >
-              <span>Top</span>
-              <ArrowUp className="w-3.5 h-3.5" />
+              <span>Top (اوپر جائیں)</span>
+              <ArrowUp className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
           </div>
         </div>

@@ -110,13 +110,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     const handleInquiryUpdate = () => {
       loadPersistentData<ContactInquiry[]>('webdev_inquiries', []).then((res) => setInquiries(res || []));
     };
+    const handleAdmissionUpdate = () => {
+      loadPersistentData<AdmissionApplication[]>('webdev_admissions', []).then((res) => setAdmissions(res || []));
+    };
 
     window.addEventListener('webdev:visitor_updated', handleVisitorUpdate);
     window.addEventListener('webdev:inquiry_updated', handleInquiryUpdate);
+    window.addEventListener('webdev:admission_updated', handleAdmissionUpdate);
 
     return () => {
       window.removeEventListener('webdev:visitor_updated', handleVisitorUpdate);
       window.removeEventListener('webdev:inquiry_updated', handleInquiryUpdate);
+      window.removeEventListener('webdev:admission_updated', handleAdmissionUpdate);
     };
   }, []);
 

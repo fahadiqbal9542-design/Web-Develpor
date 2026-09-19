@@ -27,7 +27,11 @@ import {
   Tv,
   HelpCircle,
   ChevronRight,
-  GraduationCap
+  GraduationCap,
+  ShieldCheck,
+  Lock,
+  KeyRound,
+  AlertCircle
 } from 'lucide-react';
 import { compressImage, savePersistentData, loadPersistentData } from '../../utils/imageStorage';
 import { syncSectionToSupabase } from '../../utils/supabase';
@@ -111,7 +115,7 @@ export const DEFAULT_ONLINE_CLASSES: OnlineClass[] = [
 
 export const OnlineClassesPage: React.FC<OnlineClassesPageProps> = ({
   onNavigate,
-  onOpenApplyModal
+  onOpenApplyModal,
 }) => {
   const [classes, setClasses] = useState<OnlineClass[]>(() => {
     try {
@@ -139,6 +143,51 @@ export const OnlineClassesPage: React.FC<OnlineClassesPageProps> = ({
   const [activeVirtualRoomClass, setActiveVirtualRoomClass] = useState<OnlineClass | null>(null);
   const [dpClassTarget, setDpClassTarget] = useState<OnlineClass | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Authorization password: same master key as Attendance and Lock Screen
+  const CORRECT_PASSWORD = 'king295.';
+
+  // Password protection state - identical to AttendancePage
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('webdev_online_classes_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput.trim() === CORRECT_PASSWORD) {
+      setIsAuthenticated(true);
+      setAuthError(null);
+      try {
+        sessionStorage.setItem('webdev_online_classes_auth', 'true');
+      } catch (err) {
+        console.error(err);
+      }
+      showToast('Online Classes Portal Unlocked');
+    } else {
+      setAuthError('Incorrect authorization password. Access denied.');
+    }
+  };
+
+  const handleLockClasses = () => {
+    setIsAuthenticated(false);
+    setPasswordInput('');
+    try {
+      sessionStorage.removeItem('webdev_online_classes_auth');
+    } catch (err) {
+      console.error(err);
+    }
+    showToast('Online Classes Portal locked.');
+  };
+
+  // When authenticated, user has full admin controls for classes
+  const isAdminAuth = isAuthenticated;
 
   // Load async from IndexedDB on mount
   useEffect(() => {
@@ -233,6 +282,87 @@ export const OnlineClassesPage: React.FC<OnlineClassesPageProps> = ({
     setClassToDelete(null);
   };
 
+  // ----------------------------------------------------
+  // FULL-PAGE PASSWORD LOCK SCREEN (EXACTLY LIKE ATTENDANCE PAGE)
+  // ----------------------------------------------------
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-16 bg-slate-50">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl border border-slate-200 text-center relative overflow-hidden">
+          {/* Decorative Top Accent */}
+          <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-blue-900 via-amber-400 to-blue-900" />
+
+          {/* Shield / Lock Icon */}
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-5 shadow-xs">
+            <Lock className="w-8 h-8 text-[#0B2347]" />
+          </div>
+
+          <h2 className="text-2xl font-black text-[#0B2347] font-display">
+            Protected Online Classes Portal
+          </h2>
+          <p className="text-sm text-slate-600 mt-2 leading-relaxed">
+            Please enter the authorization password to view, add online classes, and join live coding sessions.
+          </p>
+
+          {/* Form */}
+          <form onSubmit={handlePasswordSubmit} className="mt-6 space-y-4 text-left">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Password (پاسورڈ درج کریں)
+              </label>
+              <div className="relative">
+                <input
+                  id="classes-password-input"
+                  type={showPassword ? 'text' : 'password'}
+                  value={passwordInput}
+                  onChange={(e) => {
+                    setPasswordInput(e.target.value);
+                    setAuthError(null);
+                  }}
+                  placeholder="Enter security password"
+                  autoFocus
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 focus:border-[#0B2347] focus:bg-white rounded-xl text-sm font-medium text-slate-900 outline-none transition-all pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 hover:text-slate-800 px-1 py-0.5 rounded cursor-pointer"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+
+            {authError && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <button
+              id="classes-unlock-btn"
+              type="submit"
+              className="w-full py-3.5 bg-[#0B2347] hover:bg-[#123363] text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <KeyRound className="w-4 h-4 text-amber-400" />
+              <span>Unlock Online Classes</span>
+            </button>
+          </form>
+
+          <div className="mt-6 pt-4 border-t border-slate-100 flex justify-center">
+            <button
+              onClick={() => onNavigate('home')}
+              className="text-xs font-bold text-slate-500 hover:text-[#0B2347] transition-colors cursor-pointer"
+            >
+              ← Return to School Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-12 pb-24">
       {/* 1. HERO HEADER */}
@@ -254,7 +384,7 @@ export const OnlineClassesPage: React.FC<OnlineClassesPageProps> = ({
               </p>
 
               <div className="pt-2 flex flex-wrap items-center gap-3">
-                {/* PROMINENT KHUD CLASS ADD KARNE KA BUTTON */}
+                {/* PROMINENT KHUD CLASS ADD KARNE KA BUTTON (ADMIN MODE DIRECT OPEN) */}
                 <button
                   type="button"
                   id="add-new-class-hero-btn"
@@ -266,6 +396,25 @@ export const OnlineClassesPage: React.FC<OnlineClassesPageProps> = ({
                 >
                   <Plus className="w-5 h-5 text-amber-400" />
                   <span>+ Add New Online Class (Class Add Karein)</span>
+                  <span className="text-[10px] bg-amber-400 text-blue-950 font-black px-2 py-0.5 rounded-full">
+                    Admin
+                  </span>
+                </button>
+
+                <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold shadow-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Admin Mode Active</span>
+                </div>
+
+                <button
+                  type="button"
+                  id="lock-classes-portal-btn"
+                  onClick={handleLockClasses}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-200 hover:border-red-200 text-xs font-bold transition-colors cursor-pointer"
+                  title="Lock Online Classes with Password"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Lock Portal</span>
                 </button>
 
                 <button
@@ -437,9 +586,10 @@ export const OnlineClassesPage: React.FC<OnlineClassesPageProps> = ({
                 setEditingClass(null);
                 setIsAddModalOpen(true);
               }}
-              className="px-6 py-3 bg-[#0B2347] hover:bg-[#123363] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+              className="px-6 py-3 bg-[#0B2347] hover:bg-[#123363] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2 mx-auto"
             >
-              + Add Class Now
+              <Plus className="w-4 h-4 text-amber-400" />
+              <span>+ Add Class Now</span>
             </button>
           </div>
         ) : (

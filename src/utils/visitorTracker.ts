@@ -13,7 +13,8 @@ const PAGE_NAMES: Record<PageId, string> = {
   classes: 'Online Virtual Classes',
   gallery: 'Campus Gallery',
   attendance: 'Attendance Register',
-  contact: 'Contact Us & Inquiries'
+  contact: 'Contact Us & Inquiries',
+  admissions: 'Admissions Form & Portal'
 };
 
 // Helper: Detect Device Type
